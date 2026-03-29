@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
+  <title>Minecraft - Book &amp; Quill</title>
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Minecraft', monospace;
+      image-rendering: pixelated;
+      background-color: #1a1a1a;
+      background-image: repeating-conic-gradient(#1e1e1e 0% 25%, #161616 0% 50%);
+      background-size: 32px 32px;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.65) 100%);
+      pointer-events: none;
+    }
+
+
+    .mc-panel {
+      width: 440px;
+      background: #c6c6c6;
+      border: 3px solid #000;
+      box-shadow:
+        inset  2px  2px 0 #fff,
+        inset -2px -2px 0 #555555;
+      padding: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .mc-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .gui-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding-bottom: 8px;
+      border-bottom: 3px solid #555;
+      box-shadow: 0 1px 0 #fff;
+      margin-bottom: 2px;
+    }
+
+    .item-sprite {
+      width: 24px;
+      height: 24px;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .item-sprite::before {   
+      content: '';
+      position: absolute;
+      left: 4px; top: 2px;
+      width: 16px; height: 20px;
+      background: #8B5E2D;
+      border: 2px solid #000;
+      box-shadow: inset -2px -2px 0 #5a3818, inset 1px 1px 0 #b07c3e;
+    }
+    .item-sprite::after {    
+      content: '';
+      position: absolute;
+      left: 2px; top: 4px;
+      width: 4px; height: 16px;
+      background: #5a3818;
+      border: 2px solid #000;
+    }
+    .quill-line {
+      position: absolute;
+      right: 0; bottom: 0;
+      width: 3px; height: 12px;
+      background: #e8e0c0;
+      border: 1px solid #000;
+      transform: rotate(-30deg);
+      transform-origin: bottom center;
+    }
+
+    .gui-title-text {
+      font-size: 14px;
+      color: #3f3f3f;
+      text-shadow: 1px 1px 0 #fff;
+      letter-spacing: 0.5px;
+    }
+
+    /* =============================================
+       PAGE VIEWPORT — perspective container
+    ============================================= */
+    .page-viewport {
+      perspective: 900px;
+      perspective-origin: 50% 50%;
+    }
+
+    .page-card {
+      width: 100%;
+      min-height: 348px;
+      position: relative;
+      will-change: transform;
+      background: #f9efc7;
+      border: 3px solid #000;
+      box-shadow:
+        inset  2px  2px 0 #fffde8,
+        inset -2px -2px 0 #c8b06a;
+    }
+
+    .cover-page {
+      min-height: 342px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 28px;
+      text-align: center;
+      position: relative;
+    }
+    .cover-frame {
+      position: absolute;
+      inset: 10px;
+      border: 2px solid rgba(130,90,30,0.35);
+      pointer-events: none;
+    }
+    .cover-frame::before {
+      content: '';
+      position: absolute;
+      inset: 5px;
+      border: 1px solid rgba(130,90,30,0.2);
+    }
+    .cover-frame::after {
+      content: '+ + + + + + + + + + + +';
+      position: absolute;
+      top: -8px; left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Minecraft', monospace;
+      font-size: 9px;
+      color: rgba(130,90,30,0.4);
+      white-space: nowrap;
+      letter-spacing: 2px;
+    }
+    .cover-title {
+      font-family: 'Minecraft', monospace;
+      font-size: 18px;
+      color: #1a0a00;
+      line-height: 1.6;
+      margin-bottom: 6px;
+      position: relative;
+      z-index: 1;
+    }
+    .cover-rule {
+      font-family: 'Minecraft', monospace;
+      font-size: 10px;
+      color: rgba(130,90,30,0.55);
+      letter-spacing: 3px;
+      margin: 8px 0;
+      position: relative;
+      z-index: 1;
+    }
+    .cover-body {
+      font-family: 'Minecraft', monospace;
+      font-size: 11px;
+      color: #5a3d18;
+      line-height: 2;
+      position: relative;
+      z-index: 1;
+    }
+    .cover-author {
+      font-family: 'Minecraft', monospace;
+      font-size: 12px;
+      color: #3a2008;
+      margin-top: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .inner-page {
+      min-height: 342px;
+      display: flex;
+      flex-direction: column;
+      padding: 10px 14px 10px 20px;
+      position: relative;
+    }
+    .inner-page::before {
+      content: '';
+      position: absolute;
+      left: 18px; top: 0; bottom: 0;
+      width: 1px;
+      background: rgba(200,80,80,0.3);
+    }
+    .inner-page::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(
+        transparent 0px, transparent 22px,
+        rgba(0,0,0,0.06) 22px, rgba(0,0,0,0.06) 23px
+      );
+      background-position: 0 36px;
+      pointer-events: none;
+    }
+
+    .page-header-label {
+      font-family: 'Minecraft', monospace;
+      font-size: 10px;
+      color: #7a5020;
+      text-align: center;
+      padding-bottom: 4px;
+      margin-bottom: 4px;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .page-textarea {
+      flex: 1;
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      resize: none;
+      font-family: 'Minecraft', monospace;
+      font-size: 12px;
+      line-height: 23px;
+      color: #1a0800;
+      overflow: hidden;
+      caret-color: #000;
+      padding-left: 8px;
+      position: relative;
+      z-index: 1;
+    }
+    .page-textarea::placeholder { color: rgba(80,50,10,0.35); }
+    .page-textarea::-webkit-scrollbar { display: none; }
+    .page-textarea[readonly] { cursor: default; user-select: text; }
+
+    .flip-shadow {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10;
+      opacity: 0;
+    }
+
+    .nav-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .page-counter {
+      font-family: 'Minecraft', monospace;
+      font-size: 12px;
+      color: #3f3f3f;
+      text-shadow: 1px 1px 0 #fff;
+      text-align: center;
+      flex: 1;
+    }
+
+  
+    .mc-btn {
+      font-family: 'Minecraft', monospace;
+      font-size: 12px;
+      color: #fff;
+      text-shadow: 1px 1px 0 #3f3f3f;
+      background: #c6c6c6;
+      border: 2px solid #000;
+      box-shadow:
+        inset  2px  2px 0 #fff,
+        inset -2px -2px 0 #555;
+      padding: 7px 12px;
+      cursor: pointer;
+      display: inline-block;
+      user-select: none;
+      white-space: nowrap;
+      transition: background 0.05s;
+      line-height: 1;
+    }
+    .mc-btn:hover:not(:disabled) {
+      background: #a0a0f8;
+      color: #ffffa0;
+      text-shadow: 1px 1px 0 #404080;
+      box-shadow:
+        inset  2px  2px 0 #d8d8ff,
+        inset -2px -2px 0 #5050a0;
+    }
+    .mc-btn:active:not(:disabled) {
+      box-shadow:
+        inset  2px  2px 0 #555,
+        inset -2px -2px 0 #fff;
+    }
+    .mc-btn:disabled {
+      color: #555;
+      text-shadow: 1px 1px 0 #222;
+      cursor: default;
+      background: #a0a0a0;
+      box-shadow:
+        inset  2px  2px 0 #ccc,
+        inset -2px -2px 0 #444;
+    }
+    .btn-arrow { min-width: 68px; text-align: center; }
+    .btn-done  { width: 100%; text-align: center; font-size: 14px; padding: 9px 12px; }
+    .btn-done.is-signed {
+      background: #387828;
+      box-shadow: inset 2px 2px 0 #60b848, inset -2px -2px 0 #1c4010;
+      color: #d0ffc8;
+      text-shadow: 1px 1px 0 #0a2005;
+    }
+    .btn-done.is-signed:hover { background: #487830; }
+
+    .sign-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.72);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s;
+    }
+    .sign-overlay.open { opacity: 1; pointer-events: all; }
+
+    .sign-panel {
+      background: #c6c6c6;
+      border: 3px solid #000;
+      box-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555;
+      padding: 18px 18px 16px;
+      width: 310px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .sign-title {
+      font-size: 16px; color: #fff;
+      text-shadow: 1px 1px 0 #3f3f3f;
+      text-align: center;
+    }
+    .sign-desc {
+      font-size: 10px; color: #3f3f3f;
+      text-align: center; line-height: 1.8;
+      text-shadow: 1px 1px 0 #fff;
+    }
+    .sign-input {
+      width: 100%;
+      background: #000;
+      border: 2px solid #000;
+      box-shadow: inset 2px 2px 0 #555, inset -2px -2px 0 #888;
+      color: #fff;
+      font-family: 'Minecraft', monospace;
+      font-size: 13px;
+      padding: 8px 10px;
+      outline: none;
+      caret-color: #fff;
+    }
+    .sign-input::placeholder { color: #555; }
+    .sign-row { display: flex; gap: 8px; }
+    .sign-row .mc-btn { flex: 1; text-align: center; }
+
+    .toast {
+      position: fixed;
+      bottom: 28px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.85);
+      border: 2px solid #555;
+      color: #55ff55;
+      font-family: 'Minecraft', monospace;
+      font-size: 12px;
+      text-shadow: 1px 1px 0 #1a3a1a;
+      padding: 8px 18px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+      z-index: 999;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
+        .page-textarea {
+  flex: 1;
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+
+  font-family: 'pixels' !important;
+  font-size: 14px;
+  line-height: 22px;
+  letter-spacing: 1px;
+
+  color: #1a0800;
+  overflow: hidden;
+
+  caret-color: #000;
+  padding-left: 8px;
+}
+   .a9xk2 {
+  position: fixed;
+  top: 20px;
+  right: -360px;
+  width: 320px;
+  height: 84px;
+  background: #1c1c1c;
+  border: 2px solid #000;
+  box-shadow:
+    inset 0 0 0 2px #3a3a3a,
+    inset 0 0 0 4px #000,
+    0 4px 12px rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  opacity: 0;
+  transition: all 0.45s ease;
+}
+
+.qw82p {
+  right: 20px;
+  opacity: 1;
+}
+
+.z91lm {
+  width: 64px;
+  height: 64px;
+  background: #0f0f0f;
+  border: 2px solid #000;
+  box-shadow: inset 0 0 0 2px #4a4a4a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.p0x1c {
+  width: 40px;
+  height: 40px;
+  image-rendering: pixelated;
+}
+
+.l2k9d {
+  margin-left: 12px;
+}
+
+.m3n8v {
+  color: #ffff55;
+  font-size: 13px;
+  text-shadow: 1px 1px #000;
+}
+
+.t7y5b {
+  color: #fff;
+  font-size: 17px;
+  margin-top: 3px;
+  text-shadow: 1px 1px #000;
+}
+
+  </style>
+</head>
+<body>
+
+<div class="mc-panel" id="mc-panel">
+  <div class="mc-inner">
+
+    <div class="gui-title-row">
+      <div class="item-sprite"><div class="quill-line"></div></div>
+      <span class="gui-title-text">Book and Quill</span>
+    </div>
+
+    <div class="page-viewport">
+      <div class="page-card" id="page-card">
+        <div id="page-display"></div>
+        <div class="flip-shadow" id="flip-shadow"></div>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="mc-btn btn-arrow" id="btn-prev" onclick="goPrev()" disabled>&lt; Prev</button>
+      <span class="page-counter" id="page-counter">Cover</span>
+      <button class="mc-btn btn-arrow" id="btn-next" onclick="goNext()">Next &gt;</button>
+    </div>
+
+    <button class="mc-btn btn-done" id="btn-done" onclick="openSign()">Sign and Close</button>
+
+  </div>
+
+  <div class="sign-overlay" id="sign-overlay">
+    <div class="sign-panel">
+      <div class="sign-title">Sign Book</div>
+      <div class="sign-desc">Once you sign this book,<br>it cannot be edited again.</div>
+      <input class="sign-input" id="sign-input" maxlength="32" placeholder="Book Title..." spellcheck="false" autocomplete="off" />
+      <div class="sign-row">
+        <button class="mc-btn" onclick="closeSign()">Cancel</button>
+        <button class="mc-btn" onclick="signBook()">Sign</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="dbkajdjd" class="a9xk2">
+
+  <div class="z91lm">
+    <canvas id="xk29sja" class="p0x1c"></canvas>
+  </div>
+
+  <div class="l2k9d">
+    <div class="m3n8v">Achievement Obtained!</div>
+    <div class="t7y5b">Youre Lovely</div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const TOTAL = 10;
+  let cur      = 0;    
+  let signed   = false;
+  let flipping = false;
+
+  const defaultText = [
+    null,
+    
+`heyyyy tayyy,
+
+you found this journal huh
+
+so yeah
+this is basically my record of knowing you
+kinda random
+kinda real
+
+happy birthday you cutie patootie ;)
+hope you like this or at least dont get cringed by it LMAO`,
+
+`starting off
+
+i met you and it felt normal at first
+
+but then it wasnt really normal anymore
+
+like suddenly i was thinking
+ok wait
+this person is actually kinda cool
+
+didnt expect that`,
+
+`we started talking more
+
+random stuff
+random convos
+and somehow it just kept going
+
+like time would pass and id be like
+where did it even go
+
+lowk wild`,
+
+`i realized i actually look forward to talking to you
+
+not even in a dramatic way
+
+just like
+oh yeah i should tell tay this
+or
+i wonder what tay is doing
+
+you just became part of my day like that cuz i got comfy and i CAN open up to you`,
+
+`things got a bit more real
+
+not just random anymore
+
+actual conversations
+actual thoughts
+
+and it kinda hit me like this actually matters bro like yo`,
+
+`there were chaotic moments too ngl
+
+random energy
+random topics
+random everything
+
+but it always worked somehow
+
+never boring
+never forced
+just vibes`,
+
+`at this point its just normal
+
+talking to you
+sharing things
+just existing like that
+
+no pressure
+no weirdness
+
+just easy`,
+
+`lessons for myself
+
+dont overthink everything
+
+sometimes the random moments are the best ones
+
+good people are rare
+so dont mess it up when you find one
+
+and yeah
+tay is definitely one of the best people ive met`,
+
+`final entry
+
+so yeah
+
+this is where i try to say something meaningful
+
+but honestly
+
+im just really glad and thankful i met you bro
+
+you made things more fun like
+more interesting
+and just better in general..
+
+hope this year is good to you
+
+and yeah can i still call you mommy HEHE`,
+
+`
+SOO UHHHMMMM
+thats it i guess..?
+
+no big dramatic ending
+
+just this
+
+im glad i met you
+
+happy birthday tay love you (MOMMY????????)`
+  ];
+
+  let bookData = {};
+  try {
+    const raw = localStorage.getItem('mc_book_v4');
+    if (raw) bookData = JSON.parse(raw);
+    signed = !!localStorage.getItem('mc_book_signed_v4');
+  } catch (_) {}
+
+  const card       = document.getElementById('page-card');
+  const display    = document.getElementById('page-display');
+  const counter    = document.getElementById('page-counter');
+  const btnPrev    = document.getElementById('btn-prev');
+  const btnNext    = document.getElementById('btn-next');
+  const btnDone    = document.getElementById('btn-done');
+  const shadow     = document.getElementById('flip-shadow');
+  const signPanel  = document.getElementById('sign-overlay');
+  const signIn     = document.getElementById('sign-input');
+  const toastEl    = document.getElementById('toast');
+
+  function esc(s) {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function render(p) {
+    if (p === 0) {
+      const title  = localStorage.getItem('mc_book_title_v4')  || 'Book and Quill';
+      const author = localStorage.getItem('mc_book_author_v4') || 'Kavy';
+      display.innerHTML = `
+        <div class="cover-page">
+          <div class="cover-frame"></div>
+          <div class="cover-title">${esc(title)}</div>
+          <div class="cover-rule">- - - - - - - - - - - -</div>
+          <div class="cover-body">A collection of my experience with<br>YOU. yes you beautiful.</div>
+          <div class="cover-rule" style="margin-top:14px">- - - - - - - - - - - -</div>
+          <div class="cover-author">by ${esc(author)}</div>
+          <div class="cover-body" style="margin-top:16px;font-size:9px;color:rgba(130,90,30,0.5)">
+            [ Book and Quill ]<br>Written with love
+          </div>
+        </div>`;
+    } else {
+      const text = bookData[p] !== undefined ? bookData[p] : (defaultText[p] || '');
+      const ro   = signed ? ' readonly' : '';
+      display.innerHTML = `
+        <div class="inner-page">
+          <div class="page-header-label">- Page ${p} -</div>
+          <textarea class="page-textarea" id="page-ta" spellcheck="false"
+            placeholder="Start writing..."${ro}>${esc(text)}</textarea>
+        </div>`;
+      if (!signed) {
+        document.getElementById('page-ta').addEventListener('input', function() {
+          bookData[cur] = this.value;
+        });
+      }
+    }
+  }
+
+  function updateNav() {
+    btnPrev.disabled = cur <= 0;
+    btnNext.disabled = cur >= TOTAL;
+    counter.textContent = cur === 0 ? 'Cover' : `Page ${cur} of ${TOTAL}`;
+    if (signed) {
+      btnDone.textContent = '* Signed Book *';
+      btnDone.classList.add('is-signed');
+      btnDone.onclick = null;
+    }
+  }
+
+  function saveTA() {
+    const ta = document.getElementById('page-ta');
+    if (ta && cur > 0) bookData[cur] = ta.value;
+  }
+
+  
+  function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  async function flipTo(newPage, dir) {
+    if (flipping) return;
+    flipping = true;
+    saveTA();
+
+    const next    = dir === 'next';
+    const outDeg  = next ? -90 : 90;
+    const inDeg   = next ?  90 : -90;
+    const outGrad = next
+      ? 'linear-gradient(to left,  rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.1) 50%, transparent 80%)'
+      : 'linear-gradient(to right, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.1) 50%, transparent 80%)';
+    const inGrad  = next
+      ? 'linear-gradient(to right, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.1) 50%, transparent 80%)'
+      : 'linear-gradient(to left,  rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.1) 50%, transparent 80%)';
+
+    card.style.transition   = 'transform 0.15s cubic-bezier(0.55,0,1,0.45)';
+    card.style.transform    = `perspective(800px) rotateY(${outDeg}deg)`;
+    shadow.style.transition = 'opacity 0.08s linear';
+    shadow.style.background = outGrad;
+    shadow.style.opacity    = '1';
+
+    await wait(155);
+
+    cur = newPage;
+    render(cur);
+    updateNav();
+
+    card.style.transition   = 'none';
+    card.style.transform    = `perspective(800px) rotateY(${inDeg}deg)`;
+    shadow.style.transition = 'none';
+    shadow.style.background = inGrad;
+
+    void card.getBoundingClientRect(); 
+
+    card.style.transition   = 'transform 0.15s cubic-bezier(0,0.55,0.45,1)';
+    card.style.transform    = 'perspective(800px) rotateY(0deg)';
+    shadow.style.transition = 'opacity 0.12s linear';
+    shadow.style.opacity    = '0';
+
+    await wait(155);
+
+    card.style.transition = '';
+    card.style.transform  = '';
+    flipping = false;
+  }
+
+  function goNext() { if (!flipping && cur < TOTAL) flipTo(cur + 1, 'next'); }
+  function goPrev() { if (!flipping && cur > 0)     flipTo(cur - 1, 'prev'); }
+
+  
+  document.addEventListener('keydown', e => {
+    if (signPanel.classList.contains('open')) return;
+    if (document.activeElement && document.activeElement.tagName === 'TEXTAREA') return;
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') goNext();
+    if (e.key === 'ArrowLeft'  || e.key === 'PageUp')   goPrev();
+  });
+
+
+  function openSign()  { if (!signed) { signPanel.classList.add('open'); signIn.focus(); } }
+  function closeSign() { signPanel.classList.remove('open'); }
+  function signBook()  {
+    const title = signIn.value.trim() || 'Untitled Book';
+    saveTA();
+    localStorage.setItem('mc_book_v4',        JSON.stringify(bookData));
+    localStorage.setItem('mc_book_signed_v4', '1');
+    localStorage.setItem('mc_book_title_v4',  title);
+    localStorage.setItem('mc_book_author_v4', 'Kavy');
+    signed = true;
+    closeSign();
+    showToast('Book "' + title + '" has been signed!');
+    flipTo(0, 'prev');
+  }
+
+
+  let toastTimer;
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2800);
+  }
+
+  
+  render(0);
+  updateNav();
+  const _0x1a = document.getElementById("xk29sja");
+const _0x2b = _0x1a.getContext("2d");
+
+_0x1a.width = 16;
+_0x1a.height = 16;
+
+const _0x3c = (x,y,c)=>{
+  _0x2b.fillStyle=c;
+  _0x2b.fillRect(x,y,1,1);
+};
+
+const _0x4d="#5ee1ff", _0x5e="#2bbcd3", _0x6f="#0aa0b5", _0x7g="#bfffff";
+
+[
+ [7,0,_0x7g],[8,0,_0x7g],
+ [6,1,_0x7g],[7,1,_0x4d],[8,1,_0x4d],[9,1,_0x7g],
+ [5,2,_0x7g],[6,2,_0x4d],[7,2,_0x5e],[8,2,_0x5e],[9,2,_0x4d],[10,2,_0x7g],
+ [4,3,_0x7g],[5,3,_0x4d],[6,3,_0x5e],[7,3,_0x6f],[8,3,_0x6f],[9,3,_0x5e],[10,3,_0x4d],[11,3,_0x7g],
+ [5,4,_0x4d],[6,4,_0x5e],[7,4,_0x6f],[8,4,_0x6f],[9,4,_0x5e],[10,4,_0x4d],
+ [6,5,_0x5e],[7,5,_0x6f],[8,5,_0x6f],[9,5,_0x5e],
+ [7,6,_0x6f],[8,6,_0x6f]
+].forEach(p=>_0x3c(...p));
+
+const _0x8h = document.createElement("canvas");
+_0x8h.width = 16;
+_0x8h.height = 16;
+_0x8h.getContext("2d").drawImage(_0x1a,0,0);
+
+_0x1a.width = 40;
+_0x1a.height = 40;
+_0x2b.imageSmoothingEnabled = false;
+_0x2b.drawImage(_0x8h,0,0,40,40);
+
+
+setTimeout(()=>{
+  const _0x9i = document.getElementById("dbkajdjd");
+  _0x9i.classList.add("qw82p");
+
+  setTimeout(()=>{
+    _0x9i.classList.remove("qw82p");
+  },3000);
+
+},2000);
+</script>
+</body>
+</html>
